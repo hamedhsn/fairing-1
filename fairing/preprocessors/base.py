@@ -21,7 +21,7 @@ class BasePreProcessor(object):
     """
     def __init__(
         self,
-        input_files=glob.glob("**", recursive=True),
+        input_files=None,#glob.glob("**", recursive=True),
         command=["python"],
         executable=None,
         path_prefix=constants.DEFAULT_DEST_PREFIX,
