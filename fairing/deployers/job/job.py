@@ -12,6 +12,7 @@ from fairing.deployers.deployer import DeployerInterface
 
 logger = logging.getLogger(__name__)
 
+
 class Job(DeployerInterface):
     """Handle all the k8s' template building for a training 
     Attributes:
@@ -24,7 +25,7 @@ class Job(DeployerInterface):
     def __init__(self, namespace=None, runs=1, output=None,
                  cleanup=True, labels=None, job_name=constants.JOB_DEFAULT_NAME,
                  stream_log=True, deployer_type=constants.JOB_DEPLOPYER_TYPE,
-                 pod_spec_mutators=None):
+                 pod_spec_mutators=None, annotations=None):
         if namespace is None:
             self.namespace = utils.get_default_target_namespace()
         else:
@@ -40,7 +41,13 @@ class Job(DeployerInterface):
         self.cleanup = cleanup
         self.stream_log = stream_log
         self.set_labels(labels, deployer_type)
+        self.set_anotations(annotations)
         self.pod_spec_mutators = pod_spec_mutators or []
+
+    def set_anotations(self, annotations):
+        self.annotations = {'cluster-autoscaler.kubernetes.io/safe-to-evict': 'false'}
+        if annotations:
+            self.annotations.update(annotations)
 
     def set_labels(self, labels, deployer_type):
         self.labels = {'fairing-deployer': deployer_type}
@@ -80,7 +87,8 @@ class Job(DeployerInterface):
             raise TypeError('pod_spec must be a V1PodSpec, but got %s'
                             % type(pod_spec))
         return k8s_client.V1PodTemplateSpec(
-            metadata=k8s_client.V1ObjectMeta(name="fairing-deployer", labels=self.labels),
+            metadata=k8s_client.V1ObjectMeta(name="fairing-deployer", annotations=self.annotations,
+                                             labels=self.labels),
             spec=pod_spec)
         
     def generate_deployment_spec(self, pod_template_spec):
